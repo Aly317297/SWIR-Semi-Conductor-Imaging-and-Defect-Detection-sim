@@ -25,7 +25,6 @@ This repository presents an end-to-end physics-to-AI pipeline that:
 - [Defect Taxonomy](#defect-taxonomy)
 - [System Architecture & Pipeline](#system-architecture--pipeline)
 - [Experimental Results & Qualitative Evaluation](#experimental-results--qualitative-evaluation)
-- [Repository Structure](#repository-structure)
 - [Installation](#installation)
 - [Usage & Reproduction](#usage--reproduction)
 
