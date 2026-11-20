@@ -74,3 +74,76 @@ The synthetic generator models four primary semiconductor fabrication anomalies 
 │  • InGaAs Shot Noise     │     │  • Binary Defect Masks   │     │  • Mixed Precision (AMP)   │
 │  • Contrast Norm         │     │  • Multithreaded Export  │     │  • Compound BCE + Dice     │
 └──────────────────────────┘     └──────────────────────────┘     └──────────────────────────┘
+```
+
+- **Network Architecture (`DefectUNet`)**: A 4-stage symmetric encoder-decoder U-Net featuring skip connections to preserve high-frequency spatial localization (essential for 1–3 pixel wide crystal slip lines) alongside multi-scale contextual aggregation (essential for broad implanter striations).
+- **Loss Formulation**: Trained with an equally weighted combination of Binary Cross-Entropy and soft Dice loss ($\mathcal{L} = \mathcal{L}_{\text{BCE}} + \mathcal{L}_{\text{Dice}}$) to mitigate extreme foreground-background class imbalance on sparse wafer defects.
+
+---
+
+## Experimental Results & Qualitative Evaluation
+
+Evaluated on unseen, on-the-fly generated SWIR sensor frames (`tester.py`), `DefectUNet` achieves **Dice similarity coefficients ranging from $0.79$ to $0.97$** across single- and multi-defect regimes, successfully extracting sub-visual slip lines and low-contrast particle tails buried in sensor shot noise.
+
+| Test Case & Regime | Live Camera Sensor Feed (Input) \| Ground Truth Mask \| U-Net Prediction | Dice Score |
+| :--- | :---: | :---: |
+| **Case A: Multi-Class Co-occurrence**<br>*Broad implanter striations intersecting fine crystal slip lines and a central particle void.* | ![Case A Evaluation](assets/eval_striations_slip_void.png) | **$0.945$** |
+| **Case B: Background Gradient & Dense Banding**<br>*High-amplitude diagonal scan striations with orthogonal micro-slip lines.* | ![Case B Evaluation](assets/eval_dense_striations.png) | **$0.968$** |
+| **Case C: Sparse Point & Line Defects**<br>*Low-SNR particle shadow voids co-occurring with an elongated slip dislocation.* | ![Case C Evaluation](assets/eval_sparse_voids_slip.png) | **$0.898$** |
+| **Case D: Extreme Low-Contrast Multi-Void**<br>*Multiple faint particle wakes overlapping parallel twin slip lines near the noise floor.* | ![Case D Evaluation](assets/eval_low_snr_twins.png) | **$0.790$** |
+
+---
+
+## Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone [https://github.com/](https://github.com/)<your-username>/<your-repo-name>.git
+   cd <your-repo-name>
+   ```
+
+2. **Create and activate a virtual environment**
+   ```bash
+   python -m venv .venv
+   # Windows:
+   .venv\Scripts\activate
+   # Linux/macOS:
+   source .venv/bin/activate
+   ```
+
+3. **Install dependencies**
+   Install PyTorch matching your local CUDA toolkit from [pytorch.org](https://pytorch.org/), then install the remaining packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+---
+
+## Usage & Reproduction
+
+### 1. Interactive Spectral Physics Explorer
+Sweep illumination wavelengths across the Visible-to-SWIR transition ($450\text{ nm} \rightarrow 2450\text{ nm}$) to inspect carrier-induced reflectance contrast:
+```bash
+python sample_sim.py
+```
+- `←` / `→` (or `↑` / `↓`): Adjust illumination wavelength ($\lambda$).
+- `G`: Toggle between `magma` pseudocolor and raw InGaAs grayscale.
+
+### 2. Synthetic Dataset Generation
+Generate paired $1000 \times 1000$ SWIR reflectance frames and ground-truth segmentation masks under `dataset/images/` and `dataset/masks/`:
+```bash
+python generator.py
+```
+
+### 3. Model Training
+Preload the generated dataset into system RAM and train `DefectUNet` for 70 epochs using mixed precision (`bfloat16`/`float16`), saving the highest validation Dice checkpoint to `defect_unet.pth`:
+```bash
+python train.py
+```
+
+### 4. Live Inference & Evaluation
+Launch the real-time inference visualizer to benchmark `defect_unet.pth` against newly synthesized sensor feeds:
+```bash
+python tester.py
+```
+- `SPACE` or `R`: Synthesize a new wafer sample and compute live inference & Dice score.
