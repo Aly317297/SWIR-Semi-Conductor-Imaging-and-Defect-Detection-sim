@@ -1,0 +1,21 @@
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Large datasets & model weights
+dataset/
+*.pth
+*.pt
+*.onnx
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
